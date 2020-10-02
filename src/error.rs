@@ -3,7 +3,7 @@ use std::fmt;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct OperationError {
-    code: i32,
+    pub code: i32,
 }
 
 impl OperationError {
@@ -46,8 +46,8 @@ pub enum MessageLevel {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Message {
-    level: MessageLevel,
-    msg: String,
+    pub level: MessageLevel,
+    pub msg: String,
 }
 
 impl Message {
