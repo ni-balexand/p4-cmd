@@ -104,7 +104,7 @@ fn error_from_bytes(input: &[u8]) -> Result<Error, str::Utf8Error> {
 }
 
 named!(pub error<&[u8], Error>,
-    map_res!(terminated!(preceded!(tag!(b"error: "), take_till!(is_newline)), newline), error_from_bytes)
+    map_res!(terminated!(preceded!(alt!(tag!(b"error: ") | tag!(b"warning: ")), take_till!(is_newline)), newline), error_from_bytes)
 );
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
