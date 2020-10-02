@@ -13,4 +13,5 @@ keywords = ["p4", "perforce"]
 
 [dependencies]
 chrono = "0.4"
+encoding = "0.2"
 nom = "4.0"

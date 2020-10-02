@@ -1,10 +1,12 @@
 use std::char;
 use std::num;
 use std::str;
-
-use nom;
+use std::borrow::Cow;
 
 use error;
+
+use encoding::{Encoding, DecoderTrap};
+use encoding::all::WINDOWS_1252;
 
 fn is_newline(c: u8) -> bool {
     let c = char::from_u32(u32::from(c));
@@ -35,8 +37,8 @@ unsafe fn usize_from_bytes(input: &[u8]) -> Result<usize, num::ParseIntError> {
     input.parse()
 }
 
-fn str_from_bytes(input: &[u8]) -> Result<&str, str::Utf8Error> {
-    let input = str::from_utf8(input)?;
+fn str_from_bytes(input: &[u8]) -> Result<String, Cow<'static, str>> {
+    let input = WINDOWS_1252.decode(input, DecoderTrap::Strict)?;
 
     Ok(input)
 }
@@ -93,12 +95,12 @@ named!(pub exit<&[u8], Exit>,
     map_res!(terminated!(preceded!(tag!(b"exit: "), take_while!(nom::is_digit)), newline), exit_from_bytes)
 );
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Error<'a> {
-    pub(crate) msg: &'a str,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Error {
+    pub(crate) msg: String,
 }
 
-fn error_from_bytes(input: &[u8]) -> Result<Error, str::Utf8Error> {
+fn error_from_bytes(input: &[u8]) -> Result<Error, Cow<'static, str>> {
     let msg = str_from_bytes(input)?;
     Ok(Error { msg })
 }
@@ -107,12 +109,12 @@ named!(pub error<&[u8], Error>,
     map_res!(terminated!(preceded!(alt!(tag!(b"error: ") | tag!(b"warning: ")), take_till!(is_newline)), newline), error_from_bytes)
 );
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Info<'a> {
-    pub(crate) msg: &'a str,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Info {
+    pub(crate) msg: String,
 }
 
-fn info_from_bytes(input: &[u8]) -> Result<Info, str::Utf8Error> {
+fn info_from_bytes(input: &[u8]) -> Result<Info, Cow<'static, str>> {
     let msg = str_from_bytes(input)?;
     Ok(Info { msg })
 }
@@ -122,11 +124,11 @@ named!(pub info<&[u8], Info>,
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DepotFile<'a> {
-    pub(crate) path: &'a str,
+pub struct DepotFile {
+    pub(crate) path: String,
 }
 
-fn depot_file_from_bytes(input: &[u8]) -> Result<DepotFile, str::Utf8Error> {
+fn depot_file_from_bytes(input: &[u8]) -> Result<DepotFile, Cow<'static, str>> {
     let path = str_from_bytes(input)?;
     Ok(DepotFile { path })
 }
@@ -136,11 +138,11 @@ named!(pub depot_file<&[u8], DepotFile>,
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ClientFile<'a> {
-    pub(crate) path: &'a str,
+pub struct ClientFile {
+    pub(crate) path: String,
 }
 
-fn client_file_from_bytes(input: &[u8]) -> Result<ClientFile, str::Utf8Error> {
+fn client_file_from_bytes(input: &[u8]) -> Result<ClientFile, Cow<'static, str>> {
     let path = str_from_bytes(input)?;
     Ok(ClientFile { path })
 }
@@ -150,11 +152,11 @@ named!(pub client_file<&[u8], ClientFile>,
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Path<'a> {
-    pub(crate) path: &'a str,
+pub struct Path {
+    pub(crate) path: String,
 }
 
-fn path_from_bytes(input: &[u8]) -> Result<Path, str::Utf8Error> {
+fn path_from_bytes(input: &[u8]) -> Result<Path, Cow<'static, str>> {
     let path = str_from_bytes(input)?;
     Ok(Path { path })
 }
@@ -164,11 +166,11 @@ named!(pub path<&[u8], Path>,
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Dir<'a> {
-    pub(crate) dir: &'a str,
+pub struct Dir {
+    pub(crate) dir: String,
 }
 
-fn dir_from_bytes(input: &[u8]) -> Result<Dir, str::Utf8Error> {
+fn dir_from_bytes(input: &[u8]) -> Result<Dir, Cow<'static, str>> {
     let dir = str_from_bytes(input)?;
     Ok(Dir { dir })
 }
@@ -210,11 +212,11 @@ named!(pub change<&[u8], Change>,
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Action<'a> {
-    pub(crate) action: &'a str,
+pub struct Action {
+    pub(crate) action: String,
 }
 
-fn action_from_bytes(input: &[u8]) -> Result<Action, str::Utf8Error> {
+fn action_from_bytes(input: &[u8]) -> Result<Action, Cow<'static, str>> {
     let action = str_from_bytes(input)?;
     Ok(Action { action })
 }
@@ -224,11 +226,11 @@ named!(pub action<&[u8], Action>,
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FileType<'a> {
-    pub(crate) ft: &'a str,
+pub struct FileType {
+    pub(crate) ft: String,
 }
 
-fn file_type_from_bytes(input: &[u8]) -> Result<FileType, str::Utf8Error> {
+fn file_type_from_bytes(input: &[u8]) -> Result<FileType, Cow<'static, str>> {
     let ft = str_from_bytes(input)?;
     Ok(FileType { ft })
 }
@@ -277,7 +279,7 @@ named!(pub ignore_info1<&[u8], ()>,
     map_res!(terminated!(preceded!(tag!(b"info1: "), take_till!(is_newline)), newline), ignore_from_bytes)
 );
 
-fn text_from_bytes(input: &[u8]) -> Result<String, str::Utf8Error> {
+fn text_from_bytes(input: &[u8]) -> Result<String, Cow<'static, str>> {
     let text = str_from_bytes(input)?.to_owned();
 
     Ok(text)
@@ -317,7 +319,7 @@ mod test {
             Ok((
                 expected_remaining,
                 Error {
-                    msg: ".tags - no such file(s)."
+                    msg: ".tags - no such file(s).".to_string()
                 }
             ))
         );
@@ -331,7 +333,7 @@ mod test {
             Ok((
                 expected_remaining,
                 DepotFile {
-                    path: "//depot/dir/file"
+                    path: "//depot/dir/file".to_string()
                 }
             ))
         );
@@ -345,7 +347,7 @@ mod test {
             Ok((
                 expected_remaining,
                 ClientFile {
-                    path: "//client/depot/dir/file"
+                    path: "//client/depot/dir/file".to_string()
                 }
             ))
         );
@@ -359,7 +361,7 @@ mod test {
             Ok((
                 expected_remaining,
                 Path {
-                    path: "/home/user/depot/dir/file"
+                    path: "/home/user/depot/dir/file".to_string()
                 }
             ))
         );
@@ -370,7 +372,7 @@ mod test {
         let expected_remaining: &[u8] = b"";
         assert_eq!(
             dir(b"info1: dir //depot/dir\n"),
-            Ok((expected_remaining, Dir { dir: "//depot/dir" }))
+            Ok((expected_remaining, Dir { dir: "//depot/dir".to_string() }))
         );
     }
 
@@ -397,7 +399,7 @@ mod test {
         let expected_remaining: &[u8] = b"";
         assert_eq!(
             action(b"info1: action move/add\n"),
-            Ok((expected_remaining, Action { action: "move/add" }))
+            Ok((expected_remaining, Action { action: "move/add".to_string() }))
         );
     }
 
@@ -406,7 +408,7 @@ mod test {
         let expected_remaining: &[u8] = b"";
         assert_eq!(
             file_type(b"info1: type text\n"),
-            Ok((expected_remaining, FileType { ft: "text" }))
+            Ok((expected_remaining, FileType { ft: "text".to_string() }))
         );
     }
 

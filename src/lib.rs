@@ -2,6 +2,8 @@ extern crate chrono;
 #[macro_use]
 extern crate nom;
 
+extern crate encoding;
+
 mod p4;
 mod parser;
 
