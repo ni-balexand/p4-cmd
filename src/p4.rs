@@ -508,7 +508,8 @@ impl str::FromStr for FileTypeModifiers {
                 'D' => modifiers.deltas = true,
                 'F' => modifiers.full_uncompressed = true,
                 'S' => modifiers.head = true,
-                // TODO: handle `revisions`.
+                // TODO: handle `revisions`. (just eat numbers for now)
+                '0'..='9' => (),
                 'm' => modifiers.modtime = true,
                 'X' => modifiers.archive = true,
                 _ => return Err(fmt::Error),
